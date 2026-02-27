@@ -3,36 +3,44 @@ import React from 'react';
 import '../../styles/todo.scss';
 import { Filter, Todo as Todos } from '../../types/Todo';
 import { TodoItem } from '../TodoItem/Todoitem';
+import classNames from 'classnames';
 
 type Props = {
   posts: Todos[];
-  todo: Todos;
   tempTodo: Todos | null;
+  todo: Todos;
   filter: Filter | undefined;
   setErrorMessage: React.Dispatch<React.SetStateAction<string>>;
   setPosts: React.Dispatch<React.SetStateAction<Todos[]>>;
+  loading: boolean;
+  updatingIds: number[];
+  setUpdatingIds: React.Dispatch<React.SetStateAction<number[]>>;
 };
 
 export const Todo: React.FC<Props> = ({
   posts,
+  todo,
   setErrorMessage,
   setPosts,
   filter,
   tempTodo,
-  todo,
+  loading,
+  updatingIds,
+  setUpdatingIds,
 }) => {
   return (
     <section className="todoapp__main" data-cy="TodoList">
-      {!tempTodo && (
-        <TodoItem
-          key="temp"
-          posts={posts}
-          setErrorMessage={setErrorMessage}
-          setPosts={setPosts}
-          filter={filter}
-          todos={todo}
-        />
-      )}
+      <TodoItem
+        key="temp"
+        posts={posts}
+        setErrorMessage={setErrorMessage}
+        setPosts={setPosts}
+        filter={filter}
+        loading={loading}
+        setUpdatingIds={setUpdatingIds}
+        updatingIds={updatingIds}
+        todo={todo}
+      />
       {tempTodo && (
         <div data-cy="Todo" key={0} className="todo">
           <label className="todo__status-label">
@@ -56,12 +64,15 @@ export const Todo: React.FC<Props> = ({
           >
             ×
           </button>
-          {tempTodo && (
-            <div data-cy="TodoLoader" className="modal overlay">
-              <div className="modal-background has-background-white-ter" />
-              <div className="loader" />
-            </div>
-          )}
+          <div
+            data-cy="TodoLoader"
+            className={classNames('modal overlay', {
+              'is-active': updatingIds,
+            })}
+          >
+            <div className="modal-background has-background-white-ter" />
+            <div className="loader" />
+          </div>
         </div>
       )}
     </section>

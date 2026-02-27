@@ -21,10 +21,20 @@ export const TodoApp: React.FC<Props> = ({
   setTempTodo,
 }) => {
   const [title, setTitle] = useState('');
-  const isTitleEmpty = title.trim() === '';
+  // const isTitleEmpty = title.trim() === '';
   const allCompleted = posts.length > 0 && posts.every(post => post.completed);
   const hasPosts = posts.length > 0;
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const prevTodosCount = useRef(posts.length);
+
+  useEffect(() => {
+    if (posts.length < prevTodosCount.current && inputRef.current) {
+      inputRef.current.focus();
+    }
+
+    prevTodosCount.current = posts.length;
+  }, [posts]);
 
   const [isAdding, setIsAdding] = useState(false);
 
@@ -60,39 +70,29 @@ export const TodoApp: React.FC<Props> = ({
   }
 
   useEffect(() => {
-    if (!loading) {
+    if (!loading && !isAdding) {
       inputRef.current?.focus();
     }
-  }, [loading]);
+  }, [loading, isAdding]);
 
   return (
     <header className="todoapp__header">
-      {hasPosts ? (
-        allCompleted ? (
-          <button
-            type="button"
-            disabled={isTitleEmpty || loading}
-            onClick={handleAddPost}
-            className="todoapp__toggle-all"
-            data-cy="ToggleAllButton"
-          />
-        ) : (
-          <button
-            type="button"
-            disabled={isTitleEmpty || loading}
-            onClick={handleAddPost}
-            className="todoapp__toggle-all active"
-            data-cy="ToggleAllButton"
-          />
-        )
-      ) : null}
+      {hasPosts && (
+        <button
+          type="button"
+          disabled={loading}
+          onClick={handleAddPost}
+          className={`todoapp__toggle-all${!allCompleted ? ' active' : ''}`}
+          data-cy="ToggleAllButton"
+        />
+      )}
 
       <form onSubmit={handleAddPost}>
         <input
           data-cy="NewTodoField"
           type="text"
           ref={inputRef}
-          value={title}
+          value={title || ''}
           onChange={event => setTitle(event.target.value)}
           disabled={isAdding || loading}
           className="todoapp__new-todo"

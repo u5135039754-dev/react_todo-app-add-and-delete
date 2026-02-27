@@ -25,14 +25,21 @@ export const Filter: React.FC<Props> = ({
   const todosCounter = posts.filter(post => !post.completed);
   const clearCompleted = async () => {
     const completedTodos = posts.filter(todo => todo.completed);
+    const results = await Promise.allSettled(
+      completedTodos.map(todo => postService.deletePost(todo.id)),
+    );
 
-    try {
-      await Promise.all(
-        completedTodos.map(todo => postService.deletePost(todo.id)),
-      );
-      setPosts(posts.filter(todo => !todo.completed));
-    } catch {
-      setErrorMessage('Unable to delete todo');
+    setPosts(post =>
+      post.filter(
+        todos =>
+          !todos.completed ||
+          results[completedTodos.findIndex(t => t.id === todos.id)]?.status !==
+            'fulfilled',
+      ),
+    );
+    // Якщо хоч одне видалення не вдалося — показуємо помилку
+    if (results.some(result => result.status === 'rejected')) {
+      setErrorMessage('Unable to delete a todo');
     }
   };
 
@@ -62,18 +69,17 @@ export const Filter: React.FC<Props> = ({
           </a>
         ))}
       </nav>
-
-      {anyCompleted ? (
-        <button
-          type="button"
-          className="todoapp__clear-completed"
-          data-cy="ClearCompletedButton"
-          onClick={clearCompleted}
-          disabled={!anyCompleted}
-        >
-          Clear completed
-        </button>
-      ) : null}
+      {/* {anyCompleted ? ( */}
+      <button
+        type="button"
+        className="todoapp__clear-completed"
+        data-cy="ClearCompletedButton"
+        onClick={clearCompleted}
+        disabled={!anyCompleted}
+      >
+        Clear completed
+      </button>
+      {/* ) : null} */}
     </footer>
   );
 };

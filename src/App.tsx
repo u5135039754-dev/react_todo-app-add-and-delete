@@ -11,14 +11,15 @@ import { Filter } from './components/Filter/Filter';
 
 export const App: React.FC = () => {
   const [posts, setPosts] = useState<Todos[]>([]);
-  const [todo] = useState<Todos>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<Filters>(Filters.all);
+  const [todo] = useState<Todos>([]);
 
   const [errorMessage, setErrorMessage] = useState('');
   const hasTodos = posts.length > 0;
 
   const [tempTodo, setTempTodo] = useState<Todos | null>(null);
+  const [updatingIds, setUpdatingIds] = useState<number[]>([]);
 
   useEffect(() => {
     setErrorMessage('');
@@ -61,7 +62,10 @@ export const App: React.FC = () => {
               setErrorMessage={setErrorMessage}
               setPosts={setPosts}
               filter={filter}
+              updatingIds={updatingIds}
+              setUpdatingIds={setUpdatingIds}
               tempTodo={tempTodo}
+              loading={loading}
               todo={todo}
             />
             <Filter

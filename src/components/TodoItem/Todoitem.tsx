@@ -7,32 +7,34 @@ import React from 'react';
 import classNames from 'classnames';
 type Props = {
   posts: Todos[];
-  todos: Todos;
+  todo: Todos;
   filter: Filter | undefined;
   setErrorMessage: React.Dispatch<React.SetStateAction<string>>;
   setPosts: React.Dispatch<React.SetStateAction<Todos[]>>;
+  loading: boolean;
+  updatingIds: number[];
+  setUpdatingIds: React.Dispatch<React.SetStateAction<number[]>>;
 };
 export const TodoItem: React.FC<Props> = ({
   posts,
   filter,
-  todos,
+  todo,
   setErrorMessage,
+  setUpdatingIds,
   setPosts,
+  updatingIds,
 }) => {
-  const isTemp = useState<boolean | undefined>(undefined);
-  const visibleTodos = posts.filter(todo => {
+  const visibleTodos = posts.filter(todos => {
     if (filter === 'active') {
-      return !todo.completed;
+      return !todos.completed;
     }
 
     if (filter === 'completed') {
-      return todo.completed;
+      return todos.completed;
     }
 
     return true;
   });
-
-  const [updatingIds, setUpdatingIds] = useState<number[]>([]);
 
   async function handleTodoStatus(id: number, checked: boolean) {
     setErrorMessage('');
@@ -50,7 +52,7 @@ export const TodoItem: React.FC<Props> = ({
 
       setPosts(prev => prev.map(post => (post.id === id ? serverTodo : post)));
     } catch (error) {
-      setErrorMessage('Unable to update todo');
+      setErrorMessage('Unable to update a todo');
     } finally {
       setUpdatingIds(prev => prev.filter(updatingId => updatingId !== id));
     }
@@ -63,7 +65,7 @@ export const TodoItem: React.FC<Props> = ({
       await postService.deletePost(postId);
       setPosts(currentPosts => currentPosts.filter(post => post.id !== postId));
     } catch (error) {
-      setErrorMessage('Unable to delete todo');
+      setErrorMessage('Unable to delete a todo');
       setTimeout(() => setErrorMessage(''), 3000);
     } finally {
       setDeletingTodoId(null);
@@ -71,20 +73,20 @@ export const TodoItem: React.FC<Props> = ({
   };
 
   const [isEditing, setIsEditing] = useState(false);
-  const [editedTitle, setEditedTitle] = useState(todos.title);
+  const [editedTitle, setEditedTitle] = useState(todo.title);
   const [isUpdating, setIsUpdating] = useState(false);
   const handleEdit = async () => {
     const trimmed = editedTitle.trim();
 
     if (trimmed === '') {
       // Видалити todo
-      await onDelete(todos.id);
+      await onDelete(todo.id);
       setIsEditing(false);
 
       return;
     }
 
-    if (trimmed === todos.title) {
+    if (trimmed === todo.title) {
       setIsEditing(false);
 
       return;
@@ -92,15 +94,15 @@ export const TodoItem: React.FC<Props> = ({
 
     setIsUpdating(true);
     try {
-      const updated = await postService.updateTodo(todos.id, {
+      const updated = await postService.updateTodo(todo.id, {
         title: trimmed,
       });
 
       setPosts(post =>
-        post.map(todo => (todo.id === todos.id ? updated : todo)),
+        post.map(todos => (todos.id === todos.id ? updated : todos)),
       );
     } catch {
-      setErrorMessage('Unable to update a todo');
+      setErrorMessage('Unable to delete a todo');
     } finally {
       setIsUpdating(false);
       setIsEditing(false);
@@ -127,30 +129,29 @@ export const TodoItem: React.FC<Props> = ({
               checked={post.completed}
               disabled={updatingIds.includes(post.id)}
             />
-
-            {isEditing && isUpdating ? (
-              <input
-                value={editedTitle}
-                onChange={e => setEditedTitle(e.target.value)}
-                onBlur={handleEdit}
-                onKeyUp={e => {
-                  if (e.key === 'Enter') {
-                    handleEdit();
-                  }
-
-                  if (e.key === 'Escape') {
-                    setIsEditing(false);
-                  }
-                }}
-                autoFocus
-              />
-            ) : (
-              <span onDoubleClick={() => setIsEditing(true)}>{post.title}</span>
-            )}
           </label>
-          <span data-cy="TodoTitle" className="todo__title">
-            {post.title}
-          </span>
+
+          {isEditing && isUpdating ? (
+            <input
+              value={editedTitle}
+              onChange={e => setEditedTitle(e.target.value)}
+              onBlur={handleEdit}
+              onKeyUp={e => {
+                if (e.key === 'Enter') {
+                  handleEdit();
+                }
+
+                if (e.key === 'Escape') {
+                  setIsEditing(false);
+                }
+              }}
+              autoFocus
+            />
+          ) : (
+            <span data-cy="TodoTitle" className="todo__title">
+              {post.title}
+            </span>
+          )}
           <button
             type="button"
             aria-label="Delete todo"
@@ -161,12 +162,26 @@ export const TodoItem: React.FC<Props> = ({
           >
             ×
           </button>
-          {isTemp && (
-            <div data-cy="TodoLoader" className="modal overlay">
+          {deletingTodoId === post.id && (
+            <div
+              data-cy="TodoLoader"
+              className={classNames('modal overlay', {
+                'is-active': updatingIds,
+              })}
+            >
               <div className="modal-background has-background-white-ter" />
               <div className="loader" />
             </div>
           )}
+          <div
+            data-cy="TodoLoader"
+            className={classNames('modal overlay', {
+              'is-active': !updatingIds,
+            })}
+          >
+            <div className="modal-background has-background-white-ter" />
+            <div className="loader" />
+          </div>
         </div>
       ))}
     </div>
